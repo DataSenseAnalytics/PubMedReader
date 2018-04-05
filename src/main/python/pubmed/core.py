@@ -42,8 +42,8 @@ def normalizeDf(df):
                 return reduce(lambda x, y: x + '|' + y, a)
         return udf(_cat)(col)
 
-    def ListCol(df, colName, path, fieldOp1, fieldOp2):
-        if (reduce(lambda x, y: x or y, [colName in str(a) for a in df.schema.fields])): ##
+    def ListCol(df, path, fieldOp1, fieldOp2):
+        if (exists(df, path)):
             if ('ArrayType' in str(df.select(path).schema)):
                 return arrCat(col(path + fieldOp1))
             else:
@@ -87,12 +87,6 @@ def normalizeDf(df):
         'Dec':'12'
     }
 
-    def mapSeason(season):
-        if(season is None):
-            return None
-        else:
-            return seasonMap(season)
-
     def getDate(d, prefix):
         return concat(
             coalesce(getCol(d, prefix + '.Year'), lit('')),
@@ -122,16 +116,16 @@ def normalizeDf(df):
         col('Article.Journal.Title').alias('Journal_Title'),
         coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
         col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        ListCol(df, 'Grant', 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
-        ListCol(df, 'MeshHeading', 'MeshHeadingList.MeshHeading', '.DescriptorName._UI', ['.DescriptorName._VALUE']).alias('Mesh_Headings'),
-        ListCol(df, 'Chemical', 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
+        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
+        ListCol(df, 'MeshHeadingList.MeshHeading', '.DescriptorName._UI', ['.DescriptorName._VALUE']).alias('Mesh_Headings'),
+        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
         explode('Article.AuthorList.Author').alias('Authors')
     ).where(col('Authors').isNotNull())
 
     authorInfo = [col('Authors.' + f) for f in list(set(getFields(res, 'Authors')) - set(['Identifier', 'AffiliationInfo', 'CollectiveName']))]
 
     return res.smvSelectPlus(
-        ListCol(res, 'Affiliation', 'Authors.AffiliationInfo.Affiliation', '', ['']).alias('Affiliation'),
+        ListCol(res, 'Authors.AffiliationInfo.Affiliation', '', ['']).alias('Affiliation'),
         concat(getCol(df, 'Authors.Identifier.attr_Source'), lit('_'), getCol(df, 'Authors.Identifier._VALUE')).cast('string').alias('Author_Identifier'),
         *authorInfo
     ).drop('Authors')
