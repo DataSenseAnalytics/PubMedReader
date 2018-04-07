@@ -9,6 +9,8 @@ metastore_db/
 *.pyc
 *.pyo
 
+target/
+
 # IPython Notebook
 .ipynb_checkpoints
 
