@@ -1,18 +1,31 @@
 from smv import *
 from smv.functions import *
 import pyspark.sql.functions as F
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
 from pyspark.sql.utils import AnalysisException
 
+
+def _getCol(_df, path):
+    """Return the column in `path` or return lit(None)"""
+    try:
+        _df[path]
+        return _df[path]
+    except AnalysisException:
+        return F.lit(None)
+
+DataFrame.getCol = _getCol
 
 def readPubMedXml(path):
     """Read in PubMed XML file to df"""
     df = SmvApp.getInstance().sqlContext\
         .read.format('com.databricks.spark.xml')\
         .options(rowTag='MedlineCitation')\
-        .load(path)\
+        .load(path)
+
+    res = df\
         .where(F.col('Article.AuthorList').isNotNull())\
-        .where(F.col('KeywordList').isNotNull() or F.col('MeshHeadingList').isNotNull())
+        .where(df.getCol('KeywordList').isNotNull() | df.getCol('MeshHeadingList').isNotNull())
 
     return df
 
