@@ -14,7 +14,19 @@ def _getCol(_df, path):
     except AnalysisException:
         return F.lit(None)
 
+def _getArrCat(_df, path):
+    try:
+        _df[path]
+        # TODO: should have a better way to test whether is an array
+        if ('ArrayType' in str(_df.select(path).schema)):
+            return smvArrayCat('|', _df[path])
+        else:
+            return _df[path]
+    except AnalysisException:
+        return F.lit(None)
+
 DataFrame.getCol = _getCol
+DataFrame.getArrCat = _getArrCat
 
 def readPubMedXml(path):
     """Read in PubMed XML file to df"""
@@ -34,31 +46,6 @@ def pubMedCitation(path):
     return normalizeDf(df)
 
 def normalizeDf(df):
-    def exists(df, col):
-        try:
-            df[col]
-            return True
-        except AnalysisException:
-            return False
-
-    def arrCat(col):
-        def _cat(c):
-            if c is None or reduce(lambda x, y: x and y, [s is None for s in c]):
-                return None
-            else:
-                a = [s for s in c if s is not None]
-                return reduce(lambda x, y: x + '|' + y, a)
-        return udf(_cat)(col)
-
-    def ListCol(df, path, fieldOp1, fieldOp2):
-        if (exists(df, path)):
-            if ('ArrayType' in str(df.select(path).schema)):
-                return arrCat(col(path + fieldOp1))
-            else:
-                return concat(*[col(path + f) for f in fieldOp2])
-        else:
-            return lit(None).cast('string')
-
     def applyMap(hashmap, key, default=''):
         """
         returns the map's value for the given key if present, and the default otherwise
@@ -108,12 +95,9 @@ def normalizeDf(df):
         ).cast('string')
 
     def getArticleDate(d):
-        if exists(d, 'Article.ArticleDate'):
-            return when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
-                (length(trim(d.getCol('Article.ArticleDate.Year'))) > 0),
-                getDate(d, 'Article.ArticleDate')).otherwise(lit(None).cast('string'))
-        else:
-            return lit(None).cast('string')
+        return when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
+            (length(trim(d.getCol('Article.ArticleDate.Year'))) > 0),
+            getDate(d, 'Article.ArticleDate')).otherwise(lit(None).cast('string'))
 
     articleDate = getArticleDate(df)
 
@@ -126,7 +110,8 @@ def normalizeDf(df):
         col('Article.Journal.Title').alias('Journal_Title'),
         coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
         col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        ListCol(df, 'MeshHeadingList.MeshHeading', '.DescriptorName._UI', ['.DescriptorName._VALUE']).alias('Mesh_Headings'),
+        coalesce(df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI'),
+            df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._VALUE')).alias('Mesh_Headings'),
         explode('Article.AuthorList.Author').alias('Authors')
     ).where(col('Authors').isNotNull())
 
@@ -134,11 +119,12 @@ def normalizeDf(df):
 #        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
 #        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
 
-    def authorInfo(d):
-        return [d.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
-
     return res.smvSelectPlus(
-        ListCol(res, 'Authors.AffiliationInfo.Affiliation', '', ['']).alias('Affiliation'),
-        concat(df.getCol('Authors.Identifier.attr_Source'), lit('_'), df.getCol('Authors.Identifier._VALUE')).cast('string').alias('Author_Identifier'),
-        *authorInfo(res)
+        res.getArrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
+        concat(
+            res.getCol('Authors.Identifier.attr_Source'),
+            lit('_'),
+            res.getCol('Authors.Identifier._VALUE')
+        ).cast('string').alias('Author_Identifier'),
+        *[res.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
     ).drop('Authors')
