@@ -41,12 +41,6 @@ def normalizeDf(df):
         except AnalysisException:
             return False
 
-    def getFields(df, path):
-        if (path == ''):
-            return df.columns
-        else:
-            return [f.name for f in df.select(path).schema.fields[0].dataType.fields]
-
     def arrCat(col):
         def _cat(c):
             if c is None or reduce(lambda x, y: x and y, [s is None for s in c]):
@@ -132,11 +126,13 @@ def normalizeDf(df):
         col('Article.Journal.Title').alias('Journal_Title'),
         coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
         col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
         ListCol(df, 'MeshHeadingList.MeshHeading', '.DescriptorName._UI', ['.DescriptorName._VALUE']).alias('Mesh_Headings'),
-        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
         explode('Article.AuthorList.Author').alias('Authors')
     ).where(col('Authors').isNotNull())
+
+# The following info are not required. Might consider to add back if needed in the future
+#        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
+#        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
 
     def authorInfo(d):
         return [d.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
