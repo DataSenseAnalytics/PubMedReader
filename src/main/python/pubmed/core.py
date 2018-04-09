@@ -41,12 +41,6 @@ def normalizeDf(df):
         except AnalysisException:
             return False
 
-    def getCol(df, path):
-        if (exists(df, path)):
-            return col(path)
-        else:
-            return lit(None)
-
     def getFields(df, path):
         if (path == ''):
             return df.columns
@@ -109,19 +103,21 @@ def normalizeDf(df):
 
     def getDate(d, prefix):
         return concat(
-            coalesce(getCol(d, prefix + '.Year'), lit('')),
+            coalesce(d.getCol(prefix + '.Year'), lit('')),
             lit('-'),
             coalesce(
-                lpad(applyMap(monthMap, getCol(d, prefix + '.Month'), None), 2, '0'),
-                applyMap(seasonMap, getCol(d, prefix + '.Season'), None), lit('01')
+                lpad(applyMap(monthMap, d.getCol(prefix + '.Month'), None), 2, '0'),
+                applyMap(seasonMap, d.getCol(prefix + '.Season'), None), lit('01')
             ),
             lit('-'),
-            coalesce(lpad(getCol(d, prefix + '.Day'), 2, '0'), lit('01'))
+            coalesce(lpad(d.getCol(prefix + '.Day'), 2, '0'), lit('01'))
         ).cast('string')
 
     def getArticleDate(d):
         if exists(d, 'Article.ArticleDate'):
-            return when((getCol(df, 'Article.ArticleDate.Year').isNotNull()) & (length(trim(getCol(df, 'Article.ArticleDate.Year'))) > 0), getDate(d, 'Article.ArticleDate')).otherwise(lit(None).cast('string'))
+            return when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
+                (length(trim(d.getCol('Article.ArticleDate.Year'))) > 0),
+                getDate(d, 'Article.ArticleDate')).otherwise(lit(None).cast('string'))
         else:
             return lit(None).cast('string')
 
@@ -146,6 +142,6 @@ def normalizeDf(df):
 
     return res.smvSelectPlus(
         ListCol(res, 'Authors.AffiliationInfo.Affiliation', '', ['']).alias('Affiliation'),
-        concat(getCol(df, 'Authors.Identifier.attr_Source'), lit('_'), getCol(df, 'Authors.Identifier._VALUE')).cast('string').alias('Author_Identifier'),
+        concat(df.getCol('Authors.Identifier.attr_Source'), lit('_'), df.getCol('Authors.Identifier._VALUE')).cast('string').alias('Author_Identifier'),
         *authorInfo
     ).drop('Authors')
