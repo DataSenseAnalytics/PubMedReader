@@ -2,7 +2,6 @@ from smv import *
 from smv.functions import *
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import *
 from pyspark.sql.utils import AnalysisException
 
 
@@ -56,7 +55,7 @@ def normalizeDf(df):
             else:
                 return default
 
-        _fudf = udf(inner)
+        _fudf = F.udf(inner)
         return _fudf(key)
 
     seasonMap = {
@@ -83,37 +82,37 @@ def normalizeDf(df):
     }
 
     def getDate(d, prefix):
-        return concat(
-            coalesce(d.getCol(prefix + '.Year'), lit('')),
-            lit('-'),
-            coalesce(
-                lpad(applyMap(monthMap, d.getCol(prefix + '.Month'), None), 2, '0'),
-                applyMap(seasonMap, d.getCol(prefix + '.Season'), None), lit('01')
+        return F.concat(
+            F.coalesce(d.getCol(prefix + '.Year'), F.lit('')),
+            F.lit('-'),
+            F.coalesce(
+                F.lpad(applyMap(monthMap, d.getCol(prefix + '.Month'), None), 2, '0'),
+                applyMap(seasonMap, d.getCol(prefix + '.Season'), None), F.lit('01')
             ),
-            lit('-'),
-            coalesce(lpad(d.getCol(prefix + '.Day'), 2, '0'), lit('01'))
+            F.lit('-'),
+            F.coalesce(F.lpad(d.getCol(prefix + '.Day'), 2, '0'), F.lit('01'))
         ).cast('string')
 
     def getArticleDate(d):
-        return when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
-            (length(trim(d.getCol('Article.ArticleDate.Year'))) > 0),
-            getDate(d, 'Article.ArticleDate')).otherwise(lit(None).cast('string'))
+        return F.when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
+            (F.length(F.trim(d.getCol('Article.ArticleDate.Year'))) > 0),
+            getDate(d, 'Article.ArticleDate')).otherwise(F.lit(None).cast('string'))
 
     articleDate = getArticleDate(df)
 
     journalDate = getDate(df, 'Article.Journal.JournalIssue.PubDate')
 
     res = df.select(
-        concat(col('PMID._VALUE'), lit('_'), col('PMID._VERSION')).alias('PMID'),
-        concat(col('Article.Journal.ISSN._IssnType'), lit('_'), col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'),
-        col('Article.ArticleTitle').alias('Article_Title'),
-        col('Article.Journal.Title').alias('Journal_Title'),
-        coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
-        col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        coalesce(df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI'),
+        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'),
+        F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'),
+        F.col('Article.ArticleTitle').alias('Article_Title'),
+        F.col('Article.Journal.Title').alias('Journal_Title'),
+        F.coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
+        F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
+        F.coalesce(df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI'),
             df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._VALUE')).alias('Mesh_Headings'),
-        explode('Article.AuthorList.Author').alias('Authors')
-    ).where(col('Authors').isNotNull())
+        F.explode('Article.AuthorList.Author').alias('Authors')
+    ).where(F.col('Authors').isNotNull())
 
 # The following info are not required. Might consider to add back if needed in the future
 #        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
@@ -121,9 +120,9 @@ def normalizeDf(df):
 
     return res.smvSelectPlus(
         res.getArrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
-        concat(
+        F.concat(
             res.getCol('Authors.Identifier.attr_Source'),
-            lit('_'),
+            F.lit('_'),
             res.getCol('Authors.Identifier._VALUE')
         ).cast('string').alias('Author_Identifier'),
         *[res.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
