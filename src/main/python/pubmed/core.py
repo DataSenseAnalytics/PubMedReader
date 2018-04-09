@@ -1,16 +1,23 @@
 from smv import *
 from smv.functions import *
+import pyspark.sql.functions as F
 from pyspark.sql.functions import *
 from pyspark.sql.utils import AnalysisException
 
 
+def readPubMedXml(path):
+    """Read in PubMed XML file to df"""
+    df = SmvApp.getInstance().sqlContext\
+        .read.format('com.databricks.spark.xml')\
+        .options(rowTag='MedlineCitation')\
+        .load(path)\
+        .where(F.col('Article.AuthorList').isNotNull())\
+        .where(F.col('KeywordList').isNotNull() or F.col('MeshHeadingList').isNotNull())
+
+    return df
 
 def pubMedCitation(path):
-    df = SmvApp.getInstance().sqlContext.read.format('com.databricks.spark.xml'
-        ).options(rowTag='MedlineCitation'
-        ).load(path
-        ).where(col('Article.AuthorList').isNotNull())
-
+    df = readPubMedXml(path)
     return normalizeDf(df)
 
 def normalizeDf(df):
