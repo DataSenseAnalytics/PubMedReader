@@ -103,6 +103,12 @@ def normalizeDf(df):
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
         F.coalesce(df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI'),
             df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._VALUE')).alias('Mesh_Headings'),
+        df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
+        F.regexp_replace(
+            F.coalesce(df.getArrCat('Article.Abstract.AbstractText._VALUE'),
+                df.getCol('Article.Abstract.AbstractText').cast('string')),
+            '[\'"]', ''
+        ).alias('Abstract'),
         F.explode('Article.AuthorList.Author').alias('Authors')
     ).where(F.col('Authors').isNotNull())
 
