@@ -138,10 +138,11 @@ def normalizeDf(df):
         explode('Article.AuthorList.Author').alias('Authors')
     ).where(col('Authors').isNotNull())
 
-    authorInfo = [col('Authors.' + f) for f in list(set(getFields(res, 'Authors')) - set(['Identifier', 'AffiliationInfo', 'CollectiveName']))]
+    def authorInfo(d):
+        return [d.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
 
     return res.smvSelectPlus(
         ListCol(res, 'Authors.AffiliationInfo.Affiliation', '', ['']).alias('Affiliation'),
         concat(df.getCol('Authors.Identifier.attr_Source'), lit('_'), df.getCol('Authors.Identifier._VALUE')).cast('string').alias('Author_Identifier'),
-        *authorInfo
+        *authorInfo(res)
     ).drop('Authors')
