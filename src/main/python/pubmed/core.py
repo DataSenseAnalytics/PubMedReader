@@ -1,6 +1,7 @@
 from smv import *
 from smv.functions import *
 import pyspark.sql.functions as F
+from pyspark.sql.types import StringType
 from pyspark.sql import DataFrame
 from pyspark.sql.utils import AnalysisException
 
@@ -14,6 +15,8 @@ def _getCol(_df, path):
         return F.lit(None)
 
 def _getArrCat(_df, path):
+    """Return the column in `path`, if it is an arry, return as string
+    with pip separated"""
     try:
         _df[path]
         # TODO: should have a better way to test whether is an array
@@ -34,60 +37,49 @@ def readPubMedXml(path):
         .options(rowTag='MedlineCitation')\
         .load(path)
 
+    # Only keep records with author and nonnull keyword or mesh, otherwise will not
+    # be useful anyhow
     res = df\
         .where(F.col('Article.AuthorList').isNotNull())\
         .where(df.getCol('KeywordList').isNotNull() | df.getCol('MeshHeadingList').isNotNull())
 
     return df
 
-def pubMedCitation(path):
-    df = readPubMedXml(path)
-    return normalizeDf(df)
-
 def normalizeDf(df):
-    def applyMap(hashmap, key, default=''):
-        """
-        returns the map's value for the given key if present, and the default otherwise
-        """
-        def inner(k):
-            if (k in hashmap):
-                return hashmap[k]
-            else:
-                return default
-
-        _fudf = F.udf(inner)
-        return _fudf(key)
-
-    seasonMap = {
-        'Spring':'03',
-        'Summer' :'06',
-        'Autumn':'09',
-        'Fall':'09',
-        'Winter':'12'
-    }
-
-    monthMap = {
-        'Jan':'01',
-        'Feb':'02',
-        'Mar':'03',
-        'Apr':'04',
-        'May':'05',
-        'Jun':'06',
-        'Jul':'07',
-        'Aug':'08',
-        'Sep':'09',
-        'Oct':'10',
-        'Nov':'11',
-        'Dec':'12'
-    }
-
+    """
+    Normalize pubmed df from deep XML/JSON structure to flat CSV type of structure
+    """
     def getDate(d, prefix):
+        seasonMap = smvCreateLookUp({
+            'Spring':'03',
+            'Summer' :'06',
+            'Autumn':'09',
+            'Fall':'09',
+            'Winter':'12'
+        }, None, StringType())
+
+        monthMap = smvCreateLookUp({
+            'Jan':'01',
+            'Feb':'02',
+            'Mar':'03',
+            'Apr':'04',
+            'May':'05',
+            'Jun':'06',
+            'Jul':'07',
+            'Aug':'08',
+            'Sep':'09',
+            'Oct':'10',
+            'Nov':'11',
+            'Dec':'12'
+        }, None, StringType())
+
         return F.concat(
             F.coalesce(d.getCol(prefix + '.Year'), F.lit('')),
             F.lit('-'),
             F.coalesce(
-                F.lpad(applyMap(monthMap, d.getCol(prefix + '.Month'), None), 2, '0'),
-                applyMap(seasonMap, d.getCol(prefix + '.Season'), None), F.lit('01')
+                monthMap(d.getCol(prefix + '.Month')),
+                seasonMap(d.getCol(prefix + '.Season')),
+                F.lit('01')
             ),
             F.lit('-'),
             F.coalesce(F.lpad(d.getCol(prefix + '.Day'), 2, '0'), F.lit('01'))
@@ -127,3 +119,7 @@ def normalizeDf(df):
         ).cast('string').alias('Author_Identifier'),
         *[res.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
     ).drop('Authors')
+
+def pubMedCitation(path):
+    df = readPubMedXml(path)
+    return normalizeDf(df)
