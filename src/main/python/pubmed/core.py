@@ -12,20 +12,26 @@ def _getCol(_df, path):
         _df[path]
         return _df[path]
     except AnalysisException:
-        return F.lit(None)
+        return F.lit(None).cast('string')
 
 def _getArrCat(_df, path):
-    """Return the column in `path`, if it is an arry, return as string
-    with pip separated"""
+    """Return the column in `path`:
+    - if it is a simple array, return as string with pip separated
+    - if it is a array of array, return as string with pip separated flatten array
+    - else return itself
+    """
     try:
         _df[path]
-        # TODO: should have a better way to test whether is an array
-        if ('ArrayType' in str(_df.select(path).schema)):
-            return smvArrayCat('|', _df[path])
-        else:
-            return _df[path]
+        _udf = lambda c: "|".join([str(e) for e in c]) if isinstance(c, list) else c
+        return F.udf(_udf)(_df[path]).cast('string')
     except AnalysisException:
-        return F.lit(None)
+        pre, base = path.rsplit('.', 1)
+        try:
+            _df[pre]
+            _udf = lambda c: "|".join([str(e[base] for s in c for e in s)]) if isinstance(c, (list, list)) else None
+            return F.udf(_udf)(_df[pre]).cast('string')
+        except AnalysisException:
+            return F.lit(None).cast('string')
 
 DataFrame.getCol = _getCol
 DataFrame.getArrCat = _getArrCat
@@ -101,8 +107,7 @@ def normalizeDf(df):
         F.col('Article.Journal.Title').alias('Journal_Title'),
         F.coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        F.coalesce(df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI'),
-            df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._VALUE')).alias('Mesh_Headings'),
+        df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
         df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
         F.regexp_replace(
             F.coalesce(df.getArrCat('Article.Abstract.AbstractText._VALUE'),
