@@ -7,18 +7,24 @@ from pyspark.sql.utils import AnalysisException
 
 
 def _getCol(_df, path):
-    """Return the column in `path` or return lit(None)"""
+    """
+    Return the column in `path` if exist or return lit(None)
+    Caller need to do the casting of lit(None) if needed
+    """
     try:
         _df.select(path)
         return _df[path]
     except AnalysisException:
-        return F.lit(None).cast('string')
+        return F.lit(None)
 
 def _getArrCat(_df, path):
-    """Return the column in `path`:
-    - if it is a simple array, return as string with pip separated
-    - if it is a array of array, return as string with pip separated flatten array
-    - else return itself
+    """
+    Return the column in `path`:
+        - if it is a simple array, return as string with pip separated
+        - if it is a array of array, return as string with pip separated flatten array
+        - else return itself
+
+    Always return as StringType
     """
     try:
         _df.select(path)
@@ -39,6 +45,8 @@ DataFrame.getCol = _getCol
 DataFrame.getArrCat = _getArrCat
 
 def toAscii(_col):
+    """Convert Unicode to ascii, ignore errors
+    """
     def conv(u):
         if (isinstance(u, str) or isinstance(u, unicode) or isinstance(u, bytes)):
             return u.encode("ascii","ignore")
@@ -90,16 +98,16 @@ def normalizeDf(df):
         }, None, StringType())
 
         return F.concat(
-            F.coalesce(d.getCol(prefix + '.Year'), F.lit('')),
+            F.coalesce(d.getCol(prefix + '.Year').cast('string'), F.lit('')),
             F.lit('-'),
             F.coalesce(
-                monthMap(d.getCol(prefix + '.Month')),
-                seasonMap(d.getCol(prefix + '.Season')),
+                monthMap(d.getCol(prefix + '.Month').cast('string')),
+                seasonMap(d.getCol(prefix + '.Season').cast('string')),
                 F.lit('01')
             ),
             F.lit('-'),
-            F.coalesce(F.lpad(d.getCol(prefix + '.Day'), 2, '0'), F.lit('01'))
-        ).cast('string')
+            F.coalesce(F.lpad(d.getCol(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
+        )
 
     def getArticleDate(d):
         return F.when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
@@ -111,11 +119,11 @@ def normalizeDf(df):
     journalDate = getDate(df, 'Article.Journal.JournalIssue.PubDate')
 
     res = df.select(
-        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'),
-        F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'),
+        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'), # PubMed uniq id
+        F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
         F.col('Article.ArticleTitle').alias('Article_Title'),
         F.col('Article.Journal.Title').alias('Journal_Title'),
-        F.coalesce(articleDate, journalDate).alias('Journal_Publish_Date'),
+        F.coalesce(articleDate, journalDate).alias('Journal_Publish_Date'), # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
         df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
         df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
@@ -125,7 +133,7 @@ def normalizeDf(df):
             '[\'"]', ''
         ).alias('Abstract'),
         F.explode('Article.AuthorList.Author').alias('Authors')
-    ).withColumn('Abstract', toAscii('Abstract')
+    ).withColumn('Abstract', toAscii('Abstract') # Convert Abstract to pure ASCII
     ).where(F.col('Authors').isNotNull())
 
 # The following info are not required. Might consider to add back if needed in the future
@@ -138,7 +146,7 @@ def normalizeDf(df):
             res.getCol('Authors.Identifier.attr_Source'),
             F.lit('_'),
             res.getCol('Authors.Identifier._VALUE')
-        ).cast('string').alias('Author_Identifier'),
+        ).cast('string').alias('Author_Identifier'), #Identifier is added after 2013.  All data previous to 2013 have no such information
         *[res.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
     ).drop('Authors')
 
