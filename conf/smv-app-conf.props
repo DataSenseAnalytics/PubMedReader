@@ -6,3 +6,6 @@ smv.stages = pubmed
 
 # spark sql properties
 spark.sql.shuffle.partitions = 64
+
+# data dir
+smv.dataDir = data

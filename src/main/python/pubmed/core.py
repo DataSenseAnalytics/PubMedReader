@@ -9,7 +9,7 @@ from pyspark.sql.utils import AnalysisException
 def _getCol(_df, path):
     """Return the column in `path` or return lit(None)"""
     try:
-        _df[path]
+        _df.select(path)
         return _df[path]
     except AnalysisException:
         return F.lit(None).cast('string')
@@ -21,20 +21,30 @@ def _getArrCat(_df, path):
     - else return itself
     """
     try:
-        _df[path]
-        _udf = lambda c: "|".join([str(e) for e in c]) if isinstance(c, list) else c
-        return F.udf(_udf)(_df[path]).cast('string')
+        _df.select(path)
     except AnalysisException:
         pre, base = path.rsplit('.', 1)
         try:
-            _df[pre]
-            _udf = lambda c: "|".join([str(e[base] for s in c for e in s)]) if isinstance(c, (list, list)) else None
-            return F.udf(_udf)(_df[pre]).cast('string')
+            _df.select(pre)
         except AnalysisException:
             return F.lit(None).cast('string')
+        else:
+            _udf = lambda c: "|".join([e[base] for s in c for e in s]) if isinstance(c, (list, list)) else None
+            return F.udf(_udf)(_df[pre]).cast('string')
+    else:
+        _udf = lambda c: "|".join([e for e in c]) if isinstance(c, list) else c
+        return F.udf(_udf)(_df[path]).cast('string')
 
 DataFrame.getCol = _getCol
 DataFrame.getArrCat = _getArrCat
+
+def toAscii(_col):
+    def conv(u):
+        if (isinstance(u, str) or isinstance(u, unicode) or isinstance(u, bytes)):
+            return u.encode("ascii","ignore")
+        else:
+            return u
+    return F.udf(conv)(_col)
 
 def readPubMedXml(path):
     """Read in PubMed XML file to df"""
@@ -115,6 +125,7 @@ def normalizeDf(df):
             '[\'"]', ''
         ).alias('Abstract'),
         F.explode('Article.AuthorList.Author').alias('Authors')
+    ).withColumn('Abstract', toAscii('Abstract')
     ).where(F.col('Authors').isNotNull())
 
 # The following info are not required. Might consider to add back if needed in the future
