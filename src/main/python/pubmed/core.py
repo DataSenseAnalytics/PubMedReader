@@ -77,46 +77,67 @@ def readPubMedXml(path):
 
     return df
 
+
+_seasonMap = {
+    'Spring':'03',
+    'Summer' :'06',
+    'Autumn':'09',
+    'Fall':'09',
+    'Winter':'12'
+}
+
+_monthMap = {
+    'Jan':'01',
+    'Feb':'02',
+    'Mar':'03',
+    'Apr':'04',
+    'May':'05',
+    'Jun':'06',
+    'Jul':'07',
+    'Aug':'08',
+    'Sep':'09',
+    'Oct':'10',
+    'Nov':'11',
+    'Dec':'12'
+}
+
+def getDate(d, prefix):
+    monthMap = smvCreateLookUp(_monthMap, None, StringType())
+    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
+    y = d.getCol(prefix + '.Year').cast('string')
+    m = F.coalesce(
+        monthMap(d.getCol(prefix + '.Month').cast('string')),
+        seasonMap(d.getCol(prefix + '.Season').cast('string')),
+        F.lit('01')
+    )
+    d = F.coalesce(F.lpad(d.getCol(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
+
+    return F.when(y.isNull(), y).otherwise(F.concat_ws('-', y, m, d))
+
+# According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate
+# Need to handle MedlineDate case
+# Examples are:
+# <MedlineDate>1998 Dec-1999 Jan</MedlineDate>
+# <MedlineDate>2000 Spring</MedlineDate>
+# <MedlineDate>2000 Spring-Summer</MedlineDate>
+# <MedlineDate>2000 Nov-Dec</MedlineDate>
+# <MedlineDate>2000 Dec 23- 30</MedlineDate>
+def getMedlineDate(mldcol):
+    monthMap = smvCreateLookUp(_monthMap, None, StringType())
+    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
+
+    y = F.substring(mldcol, 1, 4)                       # Always there
+    m_or_s = F.regexp_extract(mldcol, '.... (\w+)', 1)  # Month or Season
+    d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1) # could be empty
+    m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
+    d = F.when(d_str == '', F.lit('01')).otherwise(d_str)
+
+    return F.when(y.isNull(), y).otherwise(F.concat_ws('-', y, m, d))
+
 def normalizeDf(df):
     """
     Normalize pubmed df from deep XML/JSON structure to flat CSV type of structure
     """
-    def getDate(d, prefix):
-        seasonMap = smvCreateLookUp({
-            'Spring':'03',
-            'Summer' :'06',
-            'Autumn':'09',
-            'Fall':'09',
-            'Winter':'12'
-        }, None, StringType())
-
-        monthMap = smvCreateLookUp({
-            'Jan':'01',
-            'Feb':'02',
-            'Mar':'03',
-            'Apr':'04',
-            'May':'05',
-            'Jun':'06',
-            'Jul':'07',
-            'Aug':'08',
-            'Sep':'09',
-            'Oct':'10',
-            'Nov':'11',
-            'Dec':'12'
-        }, None, StringType())
-
-        # TODO: https://www.nlm.nih.gov/bsd/licensee/elements_article_source.html
-        return F.concat(
-            F.coalesce(d.getCol(prefix + '.Year').cast('string'), F.lit('')),
-            F.lit('-'),
-            F.coalesce(
-                monthMap(d.getCol(prefix + '.Month').cast('string')),
-                seasonMap(d.getCol(prefix + '.Season').cast('string')),
-                F.lit('01')
-            ),
-            F.lit('-'),
-            F.coalesce(F.lpad(d.getCol(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
-        )
 
     def getArticleDate(d):
         return F.when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
@@ -125,9 +146,10 @@ def normalizeDf(df):
 
     articleDate = getArticleDate(df)
 
-    # According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate
-    # Need to handle MedlineDate case
-    journalDate = getDate(df, 'Article.Journal.JournalIssue.PubDate')
+    journalDate = F.coalesce(
+        getDate(df, 'Article.Journal.JournalIssue.PubDate'),
+        getMedlineDate('Article.Journal.JournalIssue.PubDate.MedlineDate')
+    )
 
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
@@ -156,7 +178,7 @@ def normalizeDf(df):
     return res.smvSelectPlus(
         res.getArrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
         F.concat(
-            res.getCol('Authors.Identifier.attr_Source'),
+            res.getCol('Authors.Identifier._Source'),
             F.lit('_'),
             res.getCol('Authors.Identifier._VALUE')
         ).cast('string').alias('Author_Identifier'), #Identifier is added after 2013.  All data previous to 2013 have no such information
