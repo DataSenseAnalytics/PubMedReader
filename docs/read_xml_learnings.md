@@ -107,3 +107,45 @@ that element will not be used in the code.
 
 With the minimal schema file, we further improved the run time to about 1.5
 hours.
+
+## Deal with deep structured data
+
+XML data typically have very deep structures. It is different from the
+typical CSV type of flat data, which data scientists familiar with. It is
+common need to flat the data for downstream process.
+
+To deal with the deep structured data, Spark provides a handy way to refer
+the element by their `path`. For example, if a top level element `PMID`
+is a `struct`, which has a `string` element `_VALUE`, spark allow user
+to select that column with name `PMID._VALUE`.
+
+The `path` concept works with many level deep nested `struct`, and more
+important, it allows an `array` type in the path. For example, the sub-tree
+of the schema is,
+```
+|-- MeshHeadingList: struct (nullable = true)
+|    |-- MeshHeading: array (nullable = true)
+|    |    |-- element: struct (containsNull = true)
+|    |    |    |-- DescriptorName: struct (nullable = true)
+|    |    |    |    |-- _MajorTopicYN: string (nullable = true)
+|    |    |    |    |-- _Type: string (nullable = true)
+|    |    |    |    |-- _UI: string (nullable = true)
+|    |    |    |    |-- _VALUE: string (nullable = true)
+```
+One can select `'MeshHeadingList.MeshHeading.DescriptorName._UI'`. The result
+type is a `Array[String]`.
+
+The only place this `path` approach doesn't work is there are multiple `array`
+types in the path. For example, for the following sub-tree,
+```
+|-- KeywordList: array (nullable = true)
+|    |-- element: struct (containsNull = true)
+|    |    |-- Keyword: array (nullable = true)
+|    |    |    |-- element: struct (containsNull = true)
+|    |    |    |    |-- _MajorTopicYN: string (nullable = true)
+|    |    |    |    |-- _VALUE: string (nullable = true)
+```
+One can't select `'KeywordList.Keyword._VALUE'`, since both `KeywordList` and
+`Keyword` are `array` types. If do so, an `pyspark.sql.utils.AnalysisException`
+exception will be raised. User need to flat the nested array by himself (use
+Python udf).
