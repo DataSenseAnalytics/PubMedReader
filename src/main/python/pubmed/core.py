@@ -1,7 +1,7 @@
 from smv import *
 from smv.functions import *
 import pyspark.sql.functions as F
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, StructType
 from pyspark.sql import DataFrame
 from pyspark.sql.utils import AnalysisException
 
@@ -56,10 +56,18 @@ def toAscii(_col):
 
 def readPubMedXml(path):
     """Read in PubMed XML file to df"""
+
+    # Read in schema
+    import json
+    with open ("lib/pubmed_simple_schema.json", "r") as sj:
+        schema_st = sj.read()
+    schema = StructType.fromJson(json.loads(schema_st))
+
+    # Load XML
     df = SmvApp.getInstance().sqlContext\
         .read.format('com.databricks.spark.xml')\
         .options(rowTag='MedlineCitation')\
-        .load(path)
+        .load(path, schema = schema)
 
     # Only keep records with author and nonnull keyword or mesh, otherwise will not
     # be useful anyhow
@@ -122,6 +130,7 @@ def normalizeDf(df):
     journalDate = getDate(df, 'Article.Journal.JournalIssue.PubDate')
 
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
+    # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     res = df.select(
         F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'), # PubMed uniq id
         F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)

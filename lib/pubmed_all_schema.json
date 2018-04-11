@@ -1,0 +1,1251 @@
+{
+  "fields": [
+    {
+      "metadata": {},
+      "name": "Article",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Abstract",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "AbstractText",
+                  "nullable": true,
+                  "type": {
+                    "containsNull": true,
+                    "elementType": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "_Label",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_NlmCategory",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_VALUE",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    },
+                    "type": "array"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "CopyrightInformation",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "ArticleDate",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Day",
+                  "nullable": true,
+                  "type": "long"
+                },
+                {
+                  "metadata": {},
+                  "name": "Month",
+                  "nullable": true,
+                  "type": "long"
+                },
+                {
+                  "metadata": {},
+                  "name": "Year",
+                  "nullable": true,
+                  "type": "long"
+                },
+                {
+                  "metadata": {},
+                  "name": "_DateType",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "ArticleTitle",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "AuthorList",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Author",
+                  "nullable": true,
+                  "type": {
+                    "containsNull": true,
+                    "elementType": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "AffiliationInfo",
+                          "nullable": true,
+                          "type": {
+                            "containsNull": true,
+                            "elementType": {
+                              "fields": [
+                                {
+                                  "metadata": {},
+                                  "name": "Affiliation",
+                                  "nullable": true,
+                                  "type": "string"
+                                }
+                              ],
+                              "type": "struct"
+                            },
+                            "type": "array"
+                          }
+                        },
+                        {
+                          "metadata": {},
+                          "name": "CollectiveName",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "ForeName",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "Identifier",
+                          "nullable": true,
+                          "type": {
+                            "fields": [
+                              {
+                                "metadata": {},
+                                "name": "_Source",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              {
+                                "metadata": {},
+                                "name": "_VALUE",
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            ],
+                            "type": "struct"
+                          }
+                        },
+                        {
+                          "metadata": {},
+                          "name": "Initials",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "LastName",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "Suffix",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_ValidYN",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    },
+                    "type": "array"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "_CompleteYN",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "DataBankList",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "DataBank",
+                  "nullable": true,
+                  "type": {
+                    "containsNull": true,
+                    "elementType": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "AccessionNumberList",
+                          "nullable": true,
+                          "type": {
+                            "fields": [
+                              {
+                                "metadata": {},
+                                "name": "AccessionNumber",
+                                "nullable": true,
+                                "type": {
+                                  "containsNull": true,
+                                  "elementType": "string",
+                                  "type": "array"
+                                }
+                              }
+                            ],
+                            "type": "struct"
+                          }
+                        },
+                        {
+                          "metadata": {},
+                          "name": "DataBankName",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    },
+                    "type": "array"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "_CompleteYN",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "ELocationID",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "_EIdType",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_VALUE",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_ValidYN",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "GrantList",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Grant",
+                  "nullable": true,
+                  "type": {
+                    "containsNull": true,
+                    "elementType": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "Acronym",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "Agency",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "Country",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "GrantID",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    },
+                    "type": "array"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "_CompleteYN",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "Journal",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "ISOAbbreviation",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "ISSN",
+                  "nullable": true,
+                  "type": {
+                    "fields": [
+                      {
+                        "metadata": {},
+                        "name": "_IssnType",
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      {
+                        "metadata": {},
+                        "name": "_VALUE",
+                        "nullable": true,
+                        "type": "string"
+                      }
+                    ],
+                    "type": "struct"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "JournalIssue",
+                  "nullable": true,
+                  "type": {
+                    "fields": [
+                      {
+                        "metadata": {},
+                        "name": "Issue",
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      {
+                        "metadata": {},
+                        "name": "PubDate",
+                        "nullable": true,
+                        "type": {
+                          "fields": [
+                            {
+                              "metadata": {},
+                              "name": "Day",
+                              "nullable": true,
+                              "type": "long"
+                            },
+                            {
+                              "metadata": {},
+                              "name": "MedlineDate",
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            {
+                              "metadata": {},
+                              "name": "Month",
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            {
+                              "metadata": {},
+                              "name": "Season",
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            {
+                              "metadata": {},
+                              "name": "Year",
+                              "nullable": true,
+                              "type": "long"
+                            }
+                          ],
+                          "type": "struct"
+                        }
+                      },
+                      {
+                        "metadata": {},
+                        "name": "Volume",
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      {
+                        "metadata": {},
+                        "name": "_CitedMedium",
+                        "nullable": true,
+                        "type": "string"
+                      }
+                    ],
+                    "type": "struct"
+                  }
+                },
+                {
+                  "metadata": {},
+                  "name": "Title",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "Language",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "Pagination",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "MedlinePgn",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "PublicationTypeList",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "PublicationType",
+                  "nullable": true,
+                  "type": {
+                    "containsNull": true,
+                    "elementType": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "_UI",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_VALUE",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    },
+                    "type": "array"
+                  }
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "VernacularTitle",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "_PubModel",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "ChemicalList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Chemical",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "NameOfSubstance",
+                    "nullable": true,
+                    "type": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "_UI",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_VALUE",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    }
+                  },
+                  {
+                    "metadata": {},
+                    "name": "RegistryNumber",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "CitationSubset",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "CommentsCorrectionsList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "CommentsCorrections",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "Note",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "PMID",
+                    "nullable": true,
+                    "type": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "_VALUE",
+                          "nullable": true,
+                          "type": "long"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_Version",
+                          "nullable": true,
+                          "type": "long"
+                        }
+                      ],
+                      "type": "struct"
+                    }
+                  },
+                  {
+                    "metadata": {},
+                    "name": "RefSource",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_RefType",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "DateCompleted",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Day",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Month",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Year",
+            "nullable": true,
+            "type": "long"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "DateCreated",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Day",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Month",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Year",
+            "nullable": true,
+            "type": "long"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "DateRevised",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Day",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Month",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Year",
+            "nullable": true,
+            "type": "long"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "GeneSymbolList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "GeneSymbol",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "GeneralNote",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "_Owner",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "_VALUE",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "InvestigatorList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Investigator",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "AffiliationInfo",
+                    "nullable": true,
+                    "type": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "Affiliation",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    }
+                  },
+                  {
+                    "metadata": {},
+                    "name": "ForeName",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Initials",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "LastName",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Suffix",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_ValidYN",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "KeywordList",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "Keyword",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "fields": [
+                    {
+                      "metadata": {},
+                      "name": "_MajorTopicYN",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "_VALUE",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  ],
+                  "type": "struct"
+                },
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "_Owner",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "MedlineJournalInfo",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "Country",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ISSNLinking",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "MedlineTA",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "NlmUniqueID",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "MeshHeadingList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "MeshHeading",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "DescriptorName",
+                    "nullable": true,
+                    "type": {
+                      "fields": [
+                        {
+                          "metadata": {},
+                          "name": "_MajorTopicYN",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_Type",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_UI",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        {
+                          "metadata": {},
+                          "name": "_VALUE",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      ],
+                      "type": "struct"
+                    }
+                  },
+                  {
+                    "metadata": {},
+                    "name": "QualifierName",
+                    "nullable": true,
+                    "type": {
+                      "containsNull": true,
+                      "elementType": {
+                        "fields": [
+                          {
+                            "metadata": {},
+                            "name": "_MajorTopicYN",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          {
+                            "metadata": {},
+                            "name": "_UI",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          {
+                            "metadata": {},
+                            "name": "_VALUE",
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        ],
+                        "type": "struct"
+                      },
+                      "type": "array"
+                    }
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "NumberOfReferences",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "OtherAbstract",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "AbstractText",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "CopyrightInformation",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "_Language",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "_Type",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "OtherID",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "_Source",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "_VALUE",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "PMID",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "_VALUE",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "_Version",
+            "nullable": true,
+            "type": "long"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "PersonalNameSubjectList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "PersonalNameSubject",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "ForeName",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Initials",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "LastName",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "Suffix",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "SpaceFlightMission",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "SupplMeshList",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "SupplMeshName",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": {
+                "fields": [
+                  {
+                    "metadata": {},
+                    "name": "_Type",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_UI",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "_VALUE",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                ],
+                "type": "struct"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "_Owner",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "_Status",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "_VersionDate",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "_VersionID",
+      "nullable": true,
+      "type": "long"
+    }
+  ],
+  "type": "struct"
+}
