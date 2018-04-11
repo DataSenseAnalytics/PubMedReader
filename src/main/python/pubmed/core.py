@@ -97,6 +97,7 @@ def normalizeDf(df):
             'Dec':'12'
         }, None, StringType())
 
+        # TODO: https://www.nlm.nih.gov/bsd/licensee/elements_article_source.html
         return F.concat(
             F.coalesce(d.getCol(prefix + '.Year').cast('string'), F.lit('')),
             F.lit('-'),
@@ -116,8 +117,11 @@ def normalizeDf(df):
 
     articleDate = getArticleDate(df)
 
+    # According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate
+    # Need to handle MedlineDate case
     journalDate = getDate(df, 'Article.Journal.JournalIssue.PubDate')
 
+    # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     res = df.select(
         F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'), # PubMed uniq id
         F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
