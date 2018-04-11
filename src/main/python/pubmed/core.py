@@ -59,7 +59,7 @@ def readPubMedXml(path):
 
     # Read in schema
     import json
-    with open ("lib/pubmed_simple_schema.json", "r") as sj:
+    with open ("lib/pubmed_mini_schema.json", "r") as sj:
         schema_st = sj.read()
     schema = StructType.fromJson(json.loads(schema_st))
 
