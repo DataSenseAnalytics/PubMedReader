@@ -1,4 +1,5 @@
 from test_support.smvbasetest import SmvBaseTest
+import pyspark.sql.functions as F
 import sys
 
 SrcPath = "./src/main/python"
@@ -21,13 +22,14 @@ class CoreTest(SmvBaseTest):
         self.should_be_same(res, exp)
 
     def test_getMedlineDate(self):
-        data =  self.createDF('a:String',
+        data =  self.createDF('MedlineDate:String',
             """1998 Dec-1999 Jan;
             2000 Spring-Summer;
             2000 Spring;
             2000 Dec 23- 30""")
 
-        res = data.select(C.getMedlineDate('a').alias('date'))
+        res = data.select(F.struct('MedlineDate').alias('a'))\
+            .select(C.getDate('a', 'MedlineDate').alias('date'))
 
         exp = self.createDF("date: String",
             """1998-12-01;

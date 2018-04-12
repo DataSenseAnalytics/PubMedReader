@@ -66,71 +66,48 @@ def readPubMedXml(path):
     return df
 
 
-_seasonMap = {
-    'Spring':'03',
-    'Summer' :'06',
-    'Autumn':'09',
-    'Fall':'09',
-    'Winter':'12'
-}
-
-_monthMap = {
-    'Jan':'01',
-    'Feb':'02',
-    'Mar':'03',
-    'Apr':'04',
-    'May':'05',
-    'Jun':'06',
-    'Jul':'07',
-    'Aug':'08',
-    'Sep':'09',
-    'Oct':'10',
-    'Nov':'11',
-    'Dec':'12'
-}
-
-#def getDate(prefix, withSeason=True):
-#    monthMap = smvCreateLookUp(_monthMap, None, StringType())
-#    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
-#    y = F.col(prefix + '.Year').cast('string')
-#    m = F.coalesce(
-#            monthMap(F.col(prefix + '.Month').cast('string')),
-#            seasonMap(F.col(prefix + '.Season').cast('string')),
-#            F.lit('01')
-#        ) if (withSeason) else F.coalesce(
-#            monthMap(F.col(prefix + '.Month').cast('string')),
-#            F.lit('01')
-#        )
-#    d = F.coalesce(F.lpad(F.col(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
-#
-#    return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
-#        .otherwise(F.concat_ws('-', y, m, d))
-
-# According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate
-# Need to handle MedlineDate case
-# Examples are:
-# <MedlineDate>1998 Dec-1999 Jan</MedlineDate>
-# <MedlineDate>2000 Spring</MedlineDate>
-# <MedlineDate>2000 Spring-Summer</MedlineDate>
-# <MedlineDate>2000 Nov-Dec</MedlineDate>
-# <MedlineDate>2000 Dec 23- 30</MedlineDate>
-def getMedlineDate(mldcol):
-    monthMap = smvCreateLookUp(_monthMap, None, StringType())
-    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
-
-    y = F.substring(mldcol, 1, 4)                       # Always there
-    m_or_s = F.regexp_extract(mldcol, '.... (\w+)', 1)  # Month or Season
-    d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1) # could be empty
-    m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
-    d = F.when(d_str == '', F.lit('01')).otherwise(d_str)
-
-    return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
-        .otherwise(F.concat_ws('-', y, m, d))
-
 def getDate(prefix, date_type):
     """
     3 date_types: ArticleDate, PubDate, MedlineDate
+
+    For ArticleDate, construct date from Year, Month and Day sub-fields
+    For PubDate, construct date from Year, Month or Season, and Day sub-fields
+    For MedlineDate, parse the field and construct
+
+    According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate,
+    all the followings are valid MedlineDate:
+
+        1998 Dec-1999 Jan
+        2000 Spring
+        2000 Spring-Summer
+        2000 Nov-Dec
+        2000 Dec 23- 30
+
+    Output as yyyy-MM-dd string
     """
+    _seasonMap = {
+        'Spring':'03',
+        'Summer' :'06',
+        'Autumn':'09',
+        'Fall':'09',
+        'Winter':'12'
+    }
+
+    _monthMap = {
+        'Jan':'01',
+        'Feb':'02',
+        'Mar':'03',
+        'Apr':'04',
+        'May':'05',
+        'Jun':'06',
+        'Jul':'07',
+        'Aug':'08',
+        'Sep':'09',
+        'Oct':'10',
+        'Nov':'11',
+        'Dec':'12'
+    }
+
     monthMap = smvCreateLookUp(_monthMap, None, StringType())
     seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
 
