@@ -1,21 +1,10 @@
 from smv import *
 from smv.functions import *
+from smv.error import SmvRuntimeError
 import pyspark.sql.functions as F
 from pyspark.sql.types import StringType, StructType
 from pyspark.sql import DataFrame
 from pyspark.sql.utils import AnalysisException
-
-
-def _getCol(_df, path):
-    """
-    Return the column in `path` if exist or return lit(None)
-    Caller need to do the casting of lit(None) if needed
-    """
-    try:
-        _df.select(path)
-        return _df[path]
-    except AnalysisException:
-        return F.lit(None)
 
 def _getArrCat(_df, path):
     """
@@ -41,7 +30,6 @@ def _getArrCat(_df, path):
         _udf = lambda c: "|".join([e for e in c]) if isinstance(c, list) else c
         return F.udf(_udf)(_df[path]).cast('string')
 
-DataFrame.getCol = _getCol
 DataFrame.getArrCat = _getArrCat
 
 def toAscii(_col):
@@ -73,7 +61,7 @@ def readPubMedXml(path):
     # be useful anyhow
     res = df\
         .where(F.col('Article.AuthorList').isNotNull())\
-        .where(df.getCol('KeywordList').isNotNull() | df.getCol('MeshHeadingList').isNotNull())
+        .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
 
     return df
 
@@ -101,18 +89,22 @@ _monthMap = {
     'Dec':'12'
 }
 
-def getDate(d, prefix):
-    monthMap = smvCreateLookUp(_monthMap, None, StringType())
-    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
-    y = d.getCol(prefix + '.Year').cast('string')
-    m = F.coalesce(
-        monthMap(d.getCol(prefix + '.Month').cast('string')),
-        seasonMap(d.getCol(prefix + '.Season').cast('string')),
-        F.lit('01')
-    )
-    d = F.coalesce(F.lpad(d.getCol(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
-
-    return F.when(y.isNull(), y).otherwise(F.concat_ws('-', y, m, d))
+#def getDate(prefix, withSeason=True):
+#    monthMap = smvCreateLookUp(_monthMap, None, StringType())
+#    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
+#    y = F.col(prefix + '.Year').cast('string')
+#    m = F.coalesce(
+#            monthMap(F.col(prefix + '.Month').cast('string')),
+#            seasonMap(F.col(prefix + '.Season').cast('string')),
+#            F.lit('01')
+#        ) if (withSeason) else F.coalesce(
+#            monthMap(F.col(prefix + '.Month').cast('string')),
+#            F.lit('01')
+#        )
+#    d = F.coalesce(F.lpad(F.col(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
+#
+#    return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
+#        .otherwise(F.concat_ws('-', y, m, d))
 
 # According to https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html#pubdate
 # Need to handle MedlineDate case
@@ -132,23 +124,53 @@ def getMedlineDate(mldcol):
     m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
     d = F.when(d_str == '', F.lit('01')).otherwise(d_str)
 
-    return F.when(y.isNull(), y).otherwise(F.concat_ws('-', y, m, d))
+    return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
+        .otherwise(F.concat_ws('-', y, m, d))
+
+def getDate(prefix, date_type):
+    """
+    3 date_types: ArticleDate, PubDate, MedlineDate
+    """
+    monthMap = smvCreateLookUp(_monthMap, None, StringType())
+    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
+
+    if (date_type  == 'ArticleDate'):
+        y = F.col(prefix + '.Year').cast('string')
+        m = F.coalesce(
+            monthMap(F.col(prefix + '.Month').cast('string')),
+            F.lit('01')
+        )
+        d = F.coalesce(F.lpad(F.col(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
+    elif (date_type == 'PubDate'):
+        y = F.col(prefix + '.Year').cast('string')
+        m = F.coalesce(
+            monthMap(F.col(prefix + '.Month').cast('string')),
+            seasonMap(F.col(prefix + '.Season').cast('string')),
+            F.lit('01')
+        )
+        d = F.coalesce(F.lpad(F.col(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
+    elif (date_type == 'MedlineDate'):
+        mldcol = prefix + '.MedlineDate'
+        y = F.substring(mldcol, 1, 4)                       # Always there
+        m_or_s = F.regexp_extract(mldcol, '.... (\w+)', 1)  # Month or Season
+        d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1) # could be empty
+        m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
+        d = F.when(d_str == '', F.lit('01')).otherwise(d_str)
+    else:
+        raise SmvRuntimeError("Unsuported date_type: {0}".format(date_type))
+
+    return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
+        .otherwise(F.concat_ws('-', y, m, d))
 
 def normalizeDf(df):
     """
     Normalize pubmed df from deep XML/JSON structure to flat CSV type of structure
     """
 
-    def getArticleDate(d):
-        return F.when((d.getCol('Article.ArticleDate.Year').isNotNull()) & \
-            (F.length(F.trim(d.getCol('Article.ArticleDate.Year'))) > 0),
-            getDate(d, 'Article.ArticleDate')).otherwise(F.lit(None).cast('string'))
-
-    articleDate = getArticleDate(df)
-
     journalDate = F.coalesce(
-        getDate(df, 'Article.Journal.JournalIssue.PubDate'),
-        getMedlineDate('Article.Journal.JournalIssue.PubDate.MedlineDate')
+        getDate('Article.ArticleDate', 'ArticleDate'),
+        getDate('Article.Journal.JournalIssue.PubDate', 'PubDate'),
+        getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
     )
 
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
@@ -158,13 +180,13 @@ def normalizeDf(df):
         F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
         F.col('Article.ArticleTitle').alias('Article_Title'),
         F.col('Article.Journal.Title').alias('Journal_Title'),
-        F.coalesce(articleDate, journalDate).alias('Journal_Publish_Date'), # yyyy-MM-dd format
+        journalDate.alias('Journal_Publish_Date'), # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
         df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
         df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
         F.regexp_replace(
             F.coalesce(df.getArrCat('Article.Abstract.AbstractText._VALUE'),
-                df.getCol('Article.Abstract.AbstractText').cast('string')),
+                F.col('Article.Abstract.AbstractText').cast('string')),
             '[\'"]', ''
         ).alias('Abstract'),
         F.explode('Article.AuthorList.Author').alias('Authors')
@@ -178,11 +200,11 @@ def normalizeDf(df):
     return res.smvSelectPlus(
         res.getArrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
         F.concat(
-            res.getCol('Authors.Identifier._Source'),
+            F.col('Authors.Identifier._Source'),
             F.lit('_'),
-            res.getCol('Authors.Identifier._VALUE')
+            F.col('Authors.Identifier._VALUE')
         ).cast('string').alias('Author_Identifier'), #Identifier is added after 2013.  All data previous to 2013 have no such information
-        *[res.getCol('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
+        *[F.col('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
     ).drop('Authors')
 
 def pubMedCitation(path):
