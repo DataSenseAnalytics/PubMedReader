@@ -150,6 +150,11 @@ def normalizeDf(df):
         getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
     )
 
+    def arrCat(col):
+        return F\
+            .when(F.col(col).isNull(), F.lit('None').cast('string'))\
+            .otherwise(smvArrayCat('|', F.col(col)))
+
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     res = df.select(
@@ -159,10 +164,10 @@ def normalizeDf(df):
         F.col('Article.Journal.Title').alias('Journal_Title'),
         journalDate.alias('Journal_Publish_Date'), # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        df.getArrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
+        arrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
         df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
         F.regexp_replace(
-            F.coalesce(df.getArrCat('Article.Abstract.AbstractText._VALUE'),
+            F.coalesce(arrCat('Article.Abstract.AbstractText._VALUE'),
                 F.col('Article.Abstract.AbstractText').cast('string')),
             '[\'"]', ''
         ).alias('Abstract'),
@@ -175,7 +180,7 @@ def normalizeDf(df):
 #        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
 
     return res.smvSelectPlus(
-        res.getArrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
+        arrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
         F.concat(
             F.col('Authors.Identifier._Source'),
             F.lit('_'),
