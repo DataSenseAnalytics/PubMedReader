@@ -144,7 +144,7 @@ def normalizeDf(df):
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     res = df.select(
         year.alias('Year'),
-        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'), # PubMed uniq id
+        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._Version')).alias('PMID'), # PubMed uniq id
         F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
         F.col('Article.ArticleTitle').alias('Article_Title'),
         F.col('Article.Journal.Title').alias('Journal_Title'),
