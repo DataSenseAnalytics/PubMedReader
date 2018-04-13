@@ -16,7 +16,7 @@ def toAscii(_col):
             return u
     return F.udf(conv)(_col)
 
-def readPubMedXml(path):
+def readPubMedXml(path, sqlContext):
     """Read in PubMed XML file to df"""
 
     # Read in schema
@@ -26,7 +26,7 @@ def readPubMedXml(path):
     schema = StructType.fromJson(json.loads(schema_st))
 
     # Load XML
-    df = SmvApp.getInstance().sqlContext\
+    df = sqlContext\
         .read.format('com.databricks.spark.xml')\
         .options(rowTag='MedlineCitation')\
         .load(path, schema = schema)
@@ -131,8 +131,9 @@ def normalizeDf(df):
     )
 
     def arrCat(col):
-        return F.when(F.col(col).isNull(), F.lit('None').cast('string'))\
-            .otherwise(smvArrayCat('|', F.col(col)))
+        return F.udf(
+            lambda a: '|'.join([str(e) for e in a]) if isinstance(a, list) else None
+        )(F.col(col)).cast('string')
 
     def flatArrCat(col, _elm):
         return F.udf(
@@ -174,6 +175,8 @@ def normalizeDf(df):
         *[F.col('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
     ).drop('Authors')
 
-def pubMedCitation(path):
-    df = readPubMedXml(path)
+def pubMedCitation(path, sqlContext=None):
+
+    sql_ctx = SmvApp.getInstance().sqlContext if (sqlContext is None) else sqlContext
+    df = readPubMedXml(path, sql_ctx)
     return normalizeDf(df)
