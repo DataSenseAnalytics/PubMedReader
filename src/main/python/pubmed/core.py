@@ -124,6 +124,12 @@ def normalizeDf(df):
         getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
     )
 
+    year = F.coalesce(
+        F.col('Article.ArticleDate.Year').cast('string'),
+        F.col('Article.Journal.JournalIssue.PubDate.Year').cast('string'),
+        F.substring('Article.Journal.JournalIssue.PubDate.MedlineDate', 1, 4)
+    )
+
     def arrCat(col):
         return F.when(F.col(col).isNull(), F.lit('None').cast('string'))\
             .otherwise(smvArrayCat('|', F.col(col)))
@@ -136,6 +142,7 @@ def normalizeDf(df):
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     res = df.select(
+        year.alias('Year'),
         F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._VERSION')).alias('PMID'), # PubMed uniq id
         F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
         F.col('Article.ArticleTitle').alias('Article_Title'),
