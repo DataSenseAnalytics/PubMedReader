@@ -19,7 +19,8 @@ class BasePubMedCitation(SmvModule):
 
     def run(self, i):
         nrange = self.range()
-        paths = [("/data/pdda_raw/17_pubmed/2016baseline/medline16n{:04d}.xml.gz").format(n) for n in nrange]
+        #paths = [("/data/pdda_raw/17_pubmed/2016baseline/medline16n{:04d}.xml.gz").format(n) for n in nrange]
+        paths = [("/Users/bozhang/data/pubmed/pubmed18n{:04d}.xml.gz").format(n) for n in nrange]
 
         res = reduce(lambda a, b: a.smvUnion(b), map(pubMedCitation, paths))
 
@@ -34,6 +35,11 @@ class TestPubMedCitation2(BasePubMedCitation, SmvOutput):
 
     def range(self):
         return range(1, 50)
+
+class TestPubMedCitation3(BasePubMedCitation, SmvOutput):
+
+    def range(self):
+        return range(700, 702)
 
 class PubMedCitation1(BasePubMedCitation):
 

@@ -6,32 +6,6 @@ from pyspark.sql.types import StringType, StructType
 from pyspark.sql import DataFrame
 from pyspark.sql.utils import AnalysisException
 
-def _getArrCat(_df, path):
-    """
-    Return the column in `path`:
-        - if it is a simple array, return as string with pip separated
-        - if it is a array of array, return as string with pip separated flatten array
-        - else return itself
-
-    Always return as StringType
-    """
-    try:
-        _df.select(path)
-    except AnalysisException:
-        pre, base = path.rsplit('.', 1)
-        try:
-            _df.select(pre)
-        except AnalysisException:
-            return F.lit(None).cast('string')
-        else:
-            _udf = lambda c: "|".join([e[base] for s in c for e in s]) if isinstance(c, (list, list)) else None
-            return F.udf(_udf)(_df[pre]).cast('string')
-    else:
-        _udf = lambda c: "|".join([e for e in c]) if isinstance(c, list) else c
-        return F.udf(_udf)(_df[path]).cast('string')
-
-DataFrame.getArrCat = _getArrCat
-
 def toAscii(_col):
     """Convert Unicode to ascii, ignore errors
     """
@@ -151,9 +125,13 @@ def normalizeDf(df):
     )
 
     def arrCat(col):
-        return F\
-            .when(F.col(col).isNull(), F.lit('None').cast('string'))\
+        return F.when(F.col(col).isNull(), F.lit('None').cast('string'))\
             .otherwise(smvArrayCat('|', F.col(col)))
+
+    def flatArrCat(col, _elm):
+        return F.udf(
+            lambda aa: '|'.join([e[_elm] for s in aa for e in s]) if isinstance(aa, (list, list)) else None
+        )(F.col(col)).cast('string')
 
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
@@ -165,14 +143,14 @@ def normalizeDf(df):
         journalDate.alias('Journal_Publish_Date'), # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
         arrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
-        df.getArrCat('KeywordList.Keyword._VALUE').alias('Keywords'),
-        F.regexp_replace(
-            F.coalesce(arrCat('Article.Abstract.AbstractText._VALUE'),
-                F.col('Article.Abstract.AbstractText').cast('string')),
-            '[\'"]', ''
-        ).alias('Abstract'),
+        flatArrCat('KeywordList.Keyword', '_VALUE').alias('Keywords'),
+#        F.regexp_replace(
+#            F.coalesce(arrCat('Article.Abstract.AbstractText._VALUE'),
+#                F.col('Article.Abstract.AbstractText').cast('string')),
+#            '[^a-zA-Z]', ' '
+#        ).alias('AbstractUDF'),
         F.explode('Article.AuthorList.Author').alias('Authors')
-    ).withColumn('Abstract', toAscii('Abstract') # Convert Abstract to pure ASCII
+#    ).withColumn('Abstract', toAscii('AbstractUDF')).drop('AbstractUDF' # Convert Abstract to pure ASCII
     ).where(F.col('Authors').isNotNull())
 
 # The following info are not required. Might consider to add back if needed in the future
