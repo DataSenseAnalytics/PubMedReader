@@ -1,9 +1,6 @@
 from smv import *
 from smv.functions import *
-from pyspark.sql.functions import *
-from pyspark.sql.types import *
-from pyspark.sql import SQLContext
-import re
+import pyspark.sql.functions as F
 from lib.core import normalizeDf
 from lib.xmlinput import SmvXmlInput
 
@@ -21,4 +18,4 @@ class PubMed2018Base(SmvXmlInput, SmvRunConfig):
         return False
 
     def run(self, df):
-        return normalizeDf(df)
+        return normalizeDf(df).where(F.col('Year') >= '2000')

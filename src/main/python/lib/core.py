@@ -119,26 +119,26 @@ def normalizeDf(df):
         .where(F.col('Article.AuthorList').isNotNull())\
         .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
 
-    journalDate = F.coalesce(
-        getDate('Article.ArticleDate', 'ArticleDate'),
-        getDate('Article.Journal.JournalIssue.PubDate', 'PubDate'),
-        getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
-    )
-
     year = F.coalesce(
         F.col('Article.ArticleDate.Year').cast('string'),
         F.col('Article.Journal.JournalIssue.PubDate.Year').cast('string'),
         F.substring('Article.Journal.JournalIssue.PubDate.MedlineDate', 1, 4)
     )
 
+    journalDate = F.coalesce(
+        getDate('Article.ArticleDate', 'ArticleDate'),
+        getDate('Article.Journal.JournalIssue.PubDate', 'PubDate'),
+        getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
+    )
+
     def arrCat(col):
         return F.udf(
-            lambda a: '|'.join([e for e in a]) if isinstance(a, list) else None
+            lambda a: '|'.join([e for e in a if e is not None]) if isinstance(a, list) else None
         )(F.col(col)).cast('string')
 
     def flatArrCat(col, _elm):
         return F.udf(
-            lambda aa: '|'.join([e[_elm] for s in aa for e in s]) if isinstance(aa, (list, list)) else None
+            lambda aa: '|'.join([e[_elm] for s in aa for e in s if e is not None]) if isinstance(aa, (list, list)) else None
         )(F.col(col)).cast('string')
 
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
