@@ -132,7 +132,7 @@ def normalizeDf(df):
 
     def arrCat(col):
         return F.udf(
-            lambda a: '|'.join([str(e) for e in a]) if isinstance(a, list) else None
+            lambda a: '|'.join([e for e in a]) if isinstance(a, list) else None
         )(F.col(col)).cast('string')
 
     def flatArrCat(col, _elm):
