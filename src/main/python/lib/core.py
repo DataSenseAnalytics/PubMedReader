@@ -1,4 +1,5 @@
 from smv import *
+from smv.smvdataset import SmvDataSet
 from smv.functions import *
 from smv.error import SmvRuntimeError
 import pyspark.sql.functions as F
@@ -16,12 +17,12 @@ def toAscii(_col):
             return u
     return F.udf(conv)(_col)
 
-def readPubMedXml(path, sqlContext):
+def readPubMedXml(path, schemaPath, sqlContext):
     """Read in PubMed XML file to df"""
 
     # Read in schema
     import json
-    with open ("lib/pubmed_mini_schema.json", "r") as sj:
+    with open (schemaPath, "r") as sj:
         schema_st = sj.read()
     schema = StructType.fromJson(json.loads(schema_st))
 
@@ -30,12 +31,6 @@ def readPubMedXml(path, sqlContext):
         .read.format('com.databricks.spark.xml')\
         .options(rowTag='MedlineCitation')\
         .load(path, schema = schema)
-
-    # Only keep records with author and nonnull keyword or mesh, otherwise will not
-    # be useful anyhow
-    res = df\
-        .where(F.col('Article.AuthorList').isNotNull())\
-        .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
 
     return df
 
@@ -118,6 +113,12 @@ def normalizeDf(df):
     Normalize pubmed df from deep XML/JSON structure to flat CSV type of structure
     """
 
+    # Only keep records with author and nonnull keyword or mesh, otherwise will not
+    # be useful anyhow
+    df = df\
+        .where(F.col('Article.AuthorList').isNotNull())\
+        .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
+
     journalDate = F.coalesce(
         getDate('Article.ArticleDate', 'ArticleDate'),
         getDate('Article.Journal.JournalIssue.PubDate', 'PubDate'),
@@ -176,7 +177,7 @@ def normalizeDf(df):
     ).drop('Authors')
 
 def pubMedCitation(path, sqlContext=None):
-
     sql_ctx = SmvApp.getInstance().sqlContext if (sqlContext is None) else sqlContext
-    df = readPubMedXml(path, sql_ctx)
+    schemaPath = 'lib/pubmed_mini_schema.json'
+    df = readPubMedXml(path, schemaPath, sql_ctx)
     return normalizeDf(df)

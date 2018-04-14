@@ -4,14 +4,21 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from pyspark.sql import SQLContext
 import re
-from pubmed.core import pubMedCitation
+from lib.core import normalizeDf
+from lib.xmlinput import SmvXmlInput
 
-class TestPubMed(SmvModule):
+class PubMed2018Base(SmvXmlInput, SmvRunConfig):
     def path(self):
-        return "data/input/pubmed_sample.xml"
+        return self.smvGetRunConfig("xml_path")
 
-    def requiresDS(self):
-        return []
+    def schemaPath(self):
+        return 'lib/pubmed_mini_schema.json'
 
-    def run(self, i):
-        return pubMedCitation(self.path())
+    def rowTag(self):
+        return 'MedlineCitation'
+
+    def isEphemeral(self):
+        return False
+
+    def run(self, df):
+        return normalizeDf(df)
