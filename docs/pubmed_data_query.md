@@ -16,6 +16,9 @@ Result has the same format as the data dump
 A good starting point:
 http://www.fredtrotter.com/2014/11/14/hacking-on-the-pubmed-api/
 
+Example querying for records with leucovorin in any field published between 2016 and 2018:
+https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=20&sort=relevance&term=leucovorin%20AND%202016:2018[pdat]
+
 ### API Doc
 [Entrez Programming Utilities Help](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
 
