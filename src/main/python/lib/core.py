@@ -1,6 +1,7 @@
 from smv import *
 from smv.smvdataset import SmvDataSet
 from smv.functions import *
+import smv.functions as SF
 from smv.error import SmvRuntimeError
 import pyspark.sql.functions as F
 from pyspark.sql.types import StringType, StructType
@@ -131,18 +132,10 @@ def normalizeDf(df):
         getDate('Article.Journal.JournalIssue.PubDate', 'MedlineDate')
     )
 
-    def arrCat(col):
-        return F.udf(
-            lambda a: '|'.join([e for e in a if e is not None]) if isinstance(a, list) else None
-        )(F.col(col)).cast('string')
-
-    def flatArrCat(col, _elm):
-        return F.udf(
-            lambda aa: '|'.join([e[_elm] for s in aa for e in s if e is not None]) if isinstance(aa, (list, list)) else None
-        )(F.col(col)).cast('string')
-
     # Abstract: see "18. <Abstract> and <AbstractText>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
     # TODO: InvestigatorList: "43. <InvestigatorList>" on https://www.nlm.nih.gov/bsd/licensee/elements_descriptions.html
+    # TODO: Abstract is UTF8 and has quotation marks, etc. not friendly for SMV's csv persisting. Should add when SMV supports other format persist
+    # SF.smvArrayCat('|', F.col('Article.Abstract.AbstractText._VALUE'))
     res = df.select(
         year.alias('Year'),
         F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._Version')).alias('PMID'), # PubMed uniq id
@@ -151,30 +144,24 @@ def normalizeDf(df):
         F.col('Article.Journal.Title').alias('Journal_Title'),
         journalDate.alias('Journal_Publish_Date'), # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
-        arrCat('MeshHeadingList.MeshHeading.DescriptorName._UI').alias('Mesh_Headings'),
-        flatArrCat('KeywordList.Keyword', '_VALUE').alias('Keywords'),
-#        F.regexp_replace(
-#            F.coalesce(arrCat('Article.Abstract.AbstractText._VALUE'),
-#                F.col('Article.Abstract.AbstractText').cast('string')),
-#            '[^a-zA-Z]', ' '
-#        ).alias('AbstractUDF'),
+        SF.smvArrayCat('|', F.col('MeshHeadingList.MeshHeading.DescriptorName._UI')).alias('Mesh_Headings'),
+        F.col('KeywordList.Keyword').smvArrayFlatten(df)['_VALUE'].alias('Keywords'),
         F.explode('Article.AuthorList.Author').alias('Authors')
-#    ).withColumn('Abstract', toAscii('AbstractUDF')).drop('AbstractUDF' # Convert Abstract to pure ASCII
-    ).where(F.col('Authors').isNotNull())
+    ).where(F.col('Authors').isNotNull())\
+    .withColumn('Keywords', SF.smvArrayCat('|', F.col('Keywords')))\
+    .withColumn('Affiliation', SF.smvArrayCat('|', F.col('Authors.AffiliationInfo.Affiliation')))\
+    .withColumn('Author_Identifier', F.concat_ws('_', 'Authors.Identifier._Source', 'Authors.Identifier._VALUE'))\
+    .withColumn('LastName', F.col('Authors.LastName'))\
+    .withColumn('ForeName', F.col('Authors.ForeName'))\
+    .withColumn('Suffix', F.col('Authors.Suffix'))\
+    .withColumn('Initials', F.col('Authors.Initials'))\
+    .drop('Authors')
 
 # The following info are not required. Might consider to add back if needed in the future
 #        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
 #        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
 
-    return res.smvSelectPlus(
-        arrCat('Authors.AffiliationInfo.Affiliation').alias('Affiliation'),
-        F.concat(
-            F.col('Authors.Identifier._Source'),
-            F.lit('_'),
-            F.col('Authors.Identifier._VALUE')
-        ).cast('string').alias('Author_Identifier'), #Identifier is added after 2013.  All data previous to 2013 have no such information
-        *[F.col('Authors.' + f).alias(f) for f in ['LastName', 'ForeName', 'Suffix', 'Initials']]
-    ).drop('Authors')
+    return res
 
 def pubMedCitation(path, sqlContext=None):
     sql_ctx = SmvApp.getInstance().sqlContext if (sqlContext is None) else sqlContext

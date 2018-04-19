@@ -5,7 +5,7 @@ import sys
 SrcPath = "./src/main/python"
 sys.path.append(SrcPath)
 
-import pubmed.core as C
+import lib.core as C
 
 class CoreTest(SmvBaseTest):
     """Test functions in pubmed.core
