@@ -1,29 +1,27 @@
-from smv import *
-from smv.smvdataset import SmvDataSet
-from smv.functions import *
+from smv import SmvApp
 import smv.functions as SF
 from smv.error import SmvRuntimeError
 import pyspark.sql.functions as F
 from pyspark.sql.types import StringType, StructType
-from pyspark.sql import DataFrame
-from pyspark.sql.utils import AnalysisException
+
 
 def toAscii(_col):
     """Convert Unicode to ascii, ignore errors
     """
     def conv(u):
         if (isinstance(u, str) or isinstance(u, unicode) or isinstance(u, bytes)):
-            return u.encode("ascii","ignore")
+            return u.encode("ascii", "ignore")
         else:
             return u
     return F.udf(conv)(_col)
+
 
 def readPubMedXml(path, schemaPath, sqlContext):
     """Read in PubMed XML file to df"""
 
     # Read in schema
     import json
-    with open (schemaPath, "r") as sj:
+    with open(schemaPath, "r") as sj:
         schema_st = sj.read()
     schema = StructType.fromJson(json.loads(schema_st))
 
@@ -31,7 +29,7 @@ def readPubMedXml(path, schemaPath, sqlContext):
     df = sqlContext\
         .read.format('com.databricks.spark.xml')\
         .options(rowTag='MedlineCitation')\
-        .load(path, schema = schema)
+        .load(path, schema=schema)
 
     return df
 
@@ -56,32 +54,32 @@ def getDate(prefix, date_type):
     Output as yyyy-MM-dd string
     """
     _seasonMap = {
-        'Spring':'03',
-        'Summer' :'06',
-        'Autumn':'09',
-        'Fall':'09',
-        'Winter':'12'
+        'Spring': '03',
+        'Summer': '06',
+        'Autumn': '09',
+        'Fall': '09',
+        'Winter': '12'
     }
 
     _monthMap = {
-        'Jan':'01',
-        'Feb':'02',
-        'Mar':'03',
-        'Apr':'04',
-        'May':'05',
-        'Jun':'06',
-        'Jul':'07',
-        'Aug':'08',
-        'Sep':'09',
-        'Oct':'10',
-        'Nov':'11',
-        'Dec':'12'
+        'Jan': '01',
+        'Feb': '02',
+        'Mar': '03',
+        'Apr': '04',
+        'May': '05',
+        'Jun': '06',
+        'Jul': '07',
+        'Aug': '08',
+        'Sep': '09',
+        'Oct': '10',
+        'Nov': '11',
+        'Dec': '12'
     }
 
-    monthMap = smvCreateLookUp(_monthMap, None, StringType())
-    seasonMap = smvCreateLookUp(_seasonMap, None, StringType())
+    monthMap = SF.smvCreateLookUp(_monthMap, None, StringType())
+    seasonMap = SF.smvCreateLookUp(_seasonMap, None, StringType())
 
-    if (date_type  == 'ArticleDate'):
+    if (date_type == 'ArticleDate'):
         y = F.col(prefix + '.Year').cast('string')
         m = F.coalesce(
             monthMap(F.col(prefix + '.Month').cast('string')),
@@ -100,7 +98,7 @@ def getDate(prefix, date_type):
         mldcol = prefix + '.MedlineDate'
         y = F.substring(mldcol, 1, 4)                       # Always there
         m_or_s = F.regexp_extract(mldcol, '.... (\w+)', 1)  # Month or Season
-        d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1) # could be empty
+        d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1)  # could be empty
         m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
         d = F.when(d_str == '', F.lit('01')).otherwise(d_str)
     else:
@@ -108,6 +106,7 @@ def getDate(prefix, date_type):
 
     return F.when((y.isNull()) | (F.length(y) == 0), F.lit(None).cast('string'))\
         .otherwise(F.concat_ws('-', y, m, d))
+
 
 def normalizeDf(df):
     """
@@ -138,30 +137,32 @@ def normalizeDf(df):
     # SF.smvArrayCat('|', F.col('Article.Abstract.AbstractText._VALUE'))
     res = df.select(
         year.alias('Year'),
-        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._Version')).alias('PMID'), # PubMed uniq id
-        F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'), # ISSN (optional)
+        F.concat(F.col('PMID._VALUE'), F.lit('_'), F.col('PMID._Version')).alias('PMID'),  # PubMed uniq id
+        F.concat(F.col('Article.Journal.ISSN._IssnType'), F.lit('_'), F.col('Article.Journal.ISSN._VALUE')).alias('Journal_ISSN'),  # ISSN (optional)
         F.col('Article.ArticleTitle').alias('Article_Title'),
         F.col('Article.Journal.Title').alias('Journal_Title'),
-        journalDate.alias('Journal_Publish_Date'), # yyyy-MM-dd format
+        journalDate.alias('Journal_Publish_Date'),  # yyyy-MM-dd format
         F.col('MedlineJournalInfo.Country').alias('Journal_Country'),
         SF.smvArrayCat('|', F.col('MeshHeadingList.MeshHeading.DescriptorName._UI')).alias('Mesh_Headings'),
         F.col('KeywordList.Keyword').smvArrayFlatten(df)['_VALUE'].alias('Keywords'),
         F.explode('Article.AuthorList.Author').alias('Authors')
-    ).where(F.col('Authors').isNotNull())\
-    .withColumn('Keywords', SF.smvArrayCat('|', F.col('Keywords')))\
-    .withColumn('Affiliation', SF.smvArrayCat('|', F.col('Authors.AffiliationInfo.Affiliation')))\
-    .withColumn('Author_Identifier', F.concat_ws('_', 'Authors.Identifier._Source', 'Authors.Identifier._VALUE'))\
-    .withColumn('LastName', F.col('Authors.LastName'))\
-    .withColumn('ForeName', F.col('Authors.ForeName'))\
-    .withColumn('Suffix', F.col('Authors.Suffix'))\
-    .withColumn('Initials', F.col('Authors.Initials'))\
-    .drop('Authors')
+    )\
+        .where(F.col('Authors').isNotNull())\
+        .withColumn('Keywords', SF.smvArrayCat('|', F.col('Keywords')))\
+        .withColumn('Affiliation', SF.smvArrayCat('|', F.col('Authors.AffiliationInfo.Affiliation')))\
+        .withColumn('Author_Identifier', SF.smvStrCat('_', F.col('Authors.Identifier._Source'), F.col('Authors.Identifier._VALUE')))\
+        .withColumn('LastName', F.col('Authors.LastName'))\
+        .withColumn('ForeName', F.col('Authors.ForeName'))\
+        .withColumn('Suffix', F.col('Authors.Suffix'))\
+        .withColumn('Initials', F.col('Authors.Initials'))\
+        .drop('Authors')
 
 # The following info are not required. Might consider to add back if needed in the future
 #        ListCol(df, 'Article.GrantList.Grant', '.GrantID', ['.GrantID']).alias('Grant_Ids'),
 #        ListCol(df, 'ChemicalList.Chemical', '.NameOfSubstance._UI', ['.RegistryNumber', '.NameOfSubstance._UI']).alias('Chemicals'),
 
     return res
+
 
 def pubMedCitation(path, sqlContext=None):
     sql_ctx = SmvApp.getInstance().sqlContext if (sqlContext is None) else sqlContext

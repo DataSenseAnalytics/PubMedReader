@@ -7,6 +7,8 @@ sys.path.append(SrcPath)
 
 import lib.core as C
 
+# flake8: noqa
+
 class CoreTest(SmvBaseTest):
     """Test functions in pubmed.core
     """

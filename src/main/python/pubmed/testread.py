@@ -1,8 +1,8 @@
-from smv import *
-from smv.functions import *
+from smv import SmvRunConfig
 import pyspark.sql.functions as F
 from lib.core import normalizeDf
 from lib.xmlinput import SmvXmlInput
+
 
 class PubMed2018Base(SmvXmlInput, SmvRunConfig):
     def path(self):
