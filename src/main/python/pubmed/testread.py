@@ -1,14 +1,13 @@
-from smv import SmvRunConfig
+from smv import SmvRunConfig, SmvXmlFile
 import pyspark.sql.functions as F
 from lib.core import normalizeDf
-from lib.xmlinput import SmvXmlInput
 
 
-class PubMed2018Base(SmvXmlInput, SmvRunConfig):
-    def path(self):
+class PubMed2018Base(SmvXmlFile, SmvRunConfig):
+    def fullPath(self):
         return self.smvGetRunConfig("xml_path")
 
-    def schemaPath(self):
+    def fullSchemaPath(self):
         return 'lib/pubmed_mini_schema.json'
 
     def rowTag(self):
