@@ -9,3 +9,12 @@ spark.sql.shuffle.partitions = 64
 
 # data dir
 smv.dataDir = data
+
+# Run config (Python)
+# Runtime config
+smv.config.keys = xml_path, start_year
+
+# smv-user-conf.props should define the Runtime conf
+# Example:
+# smv.config.xml_path = /data/pdda_raw/17_pubmed/2018baseline
+# smv.config.start_year = 2000

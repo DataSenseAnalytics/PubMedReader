@@ -17,4 +17,5 @@ class PubMed2018Base(SmvXmlFile, SmvRunConfig):
         return False
 
     def run(self, df):
-        return normalizeDf(df).where(F.col('Year') >= '2000')
+        start_year = self.smvGetRunConfig("start_year")
+        return normalizeDf(df).where(F.col('Year') >= start_year)

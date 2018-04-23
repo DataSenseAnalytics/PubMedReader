@@ -1,0 +1,6 @@
+smv.dataDir = /data/bzhang
+
+# Run config (Python)
+# Runtime config
+smv.config.xml_path = /data/pdda_raw/17_pubmed/2018baseline
+smv.config.start_year = 2000
