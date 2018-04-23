@@ -6,6 +6,9 @@ A test SMV project to
 * Read from URL
 
 ## To run the project in shell
+
+No need to specify spark-xml package anymore since Smv added it.
+
 ```shell
-$ smv-pyshell -- --jars lib/spark-xml_2.10-0.4.1.jar
+$ smv-pyshell
 ```
