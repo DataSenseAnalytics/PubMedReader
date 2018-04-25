@@ -3,7 +3,7 @@ import smv.functions as SF
 from smv.error import SmvRuntimeError
 import pyspark.sql.functions as F
 from pyspark.sql.types import StringType, StructType
-
+from Bio import Entrez
 
 def toAscii(_col):
     """Convert Unicode to ascii, ignore errors
@@ -33,6 +33,38 @@ def readPubMedXml(path, schemaPath, sqlContext):
 
     return df
 
+def toQueryString(termList):
+    return reduce(lambda h, t: h + ' OR ' + t, termList)
+
+
+def pubmedSearch(meshTerms, numPastDays):
+    query = toQueryString(meshTerms)
+    Entrez.email = 'klu@twineanalytics.com'
+    handle = Entrez.esearch(db='pubmed',
+                            retmode='xml',
+                            reldate=numPastDays,
+                            term=query,
+                            field='mesh',
+                            usehistory='y')
+    results = Entrez.read(handle)
+    return results
+
+def fetchResults(searchResult):
+    env = searchResult['WebEnv']
+    qkey = searchResult['QueryKey']
+    handle = Entrez.efetch(db='pubmed',
+                  retmode='xml',
+                  WebEnv=env,
+                  query_key=qkey)
+    results = Entrez.read(handle)
+    return results
+
+def fetchURL(searchResult):
+    env = searchResult['WebEnv']
+    qkey = searchResult['QueryKey']
+    return 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&WebEnv=' + env + '&query_key=' + qkey
+
+# https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&WebEnv=NCID_1_190852209_130.14.22.215_9001_1524516650_1189901983_0MetA0_S_MegaStore&query_key=1&retmode=xml
 
 def getDate(prefix, date_type):
     """
