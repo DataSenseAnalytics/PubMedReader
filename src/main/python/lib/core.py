@@ -34,7 +34,7 @@ def readPubMedXml(path, schemaPath, sqlContext):
     return df
 
 def toQueryString(termList):
-    return reduce(lambda h, t: h + ' OR ' + t, termList)
+    return reduce(lambda h, t: h + '[mh] OR ' + t, termList) + '[mh]'
 
 
 def pubmedSearch(meshTerms, numPastDays):
@@ -43,8 +43,10 @@ def pubmedSearch(meshTerms, numPastDays):
     handle = Entrez.esearch(db='pubmed',
                             retmode='xml',
                             reldate=numPastDays,
+                            #mindate='2013/01/01',
+                            #maxdate='2015/12/01',
                             term=query,
-                            field='mesh',
+                            #field='mesh',
                             usehistory='y')
     results = Entrez.read(handle)
     return results
@@ -64,7 +66,7 @@ def fetchURL(searchResult):
     qkey = searchResult['QueryKey']
     return 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&WebEnv=' + env + '&query_key=' + qkey
 
-# https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&WebEnv=NCID_1_190852209_130.14.22.215_9001_1524516650_1189901983_0MetA0_S_MegaStore&query_key=1&retmode=xml
+# https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&WebEnv=NCID_1_270098305_130.14.22.215_9001_1524859961_1923430135_0MetA0_S_MegaStore&query_key=1&retmode=xml
 
 def getDate(prefix, date_type):
     """
@@ -128,7 +130,7 @@ def getDate(prefix, date_type):
         d = F.coalesce(F.lpad(F.col(prefix + '.Day').cast('string'), 2, '0'), F.lit('01'))
     elif (date_type == 'MedlineDate'):
         mldcol = prefix + '.MedlineDate'
-        y = F.substring(mldcol, 1, 4)                       # Always there
+        y = F.regexp_extract(mldcol, '(\d\d\d\d)', 1)                      # Always there
         m_or_s = F.regexp_extract(mldcol, '.... (\w+)', 1)  # Month or Season
         d_str = F.regexp_extract(mldcol, '.... ... (\d\d)', 1)  # could be empty
         m = F.coalesce(monthMap(m_or_s), seasonMap(m_or_s), F.lit('01'))
@@ -154,7 +156,7 @@ def normalizeDf(df):
     year = F.coalesce(
         F.col('Article.ArticleDate.Year').cast('string'),
         F.col('Article.Journal.JournalIssue.PubDate.Year').cast('string'),
-        F.substring('Article.Journal.JournalIssue.PubDate.MedlineDate', 1, 4)
+        F.regexp_extract('Article.Journal.JournalIssue.PubDate.MedlineDate', '(\d\d\d\d)', 1)
     )
 
     journalDate = F.coalesce(
