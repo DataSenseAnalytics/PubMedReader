@@ -37,16 +37,33 @@ def toQueryString(termList):
     return reduce(lambda h, t: h + '[mh] OR ' + t, termList) + '[mh]'
 
 
-def pubmedSearch(meshTerms, numPastDays):
+def pubmedSearch(meshTerms, startDate, endDate):
+    query = toQueryString(meshTerms)
+    Entrez.email = 'klu@twineanalytics.com'
+    handle = Entrez.esearch(db="pubmed",
+                            retmode="xml",
+                            datetype="pdat",
+                            #reldate=numPastDays,
+                            mindate=startDate,
+                            maxdate=endDate,
+                            term=query,
+                            #field='mesh',
+                            usehistory="y")
+    results = Entrez.read(handle)
+    return results
+
+def pubmedCnt(meshTerms, numPastDays):
     query = toQueryString(meshTerms)
     Entrez.email = 'klu@twineanalytics.com'
     handle = Entrez.esearch(db='pubmed',
                             retmode='xml',
-                            reldate=numPastDays,
-                            #mindate='2013/01/01',
-                            #maxdate='2015/12/01',
+                            datetype="pdat",
+                            #reldate=numPastDays,
+                            mindate=startDate,
+                            maxdate=endDate,
                             term=query,
                             #field='mesh',
+                            rettype='count',
                             usehistory='y')
     results = Entrez.read(handle)
     return results
@@ -150,8 +167,9 @@ def normalizeDf(df):
     # Only keep records with author and nonnull keyword or mesh, otherwise will not
     # be useful anyhow
     df = df\
-        .where(F.col('Article.AuthorList').isNotNull())\
-        .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
+        .where(F.col('Article.AuthorList').isNotNull())
+        # \
+        # .where(F.col('KeywordList').isNotNull() | F.col('MeshHeadingList').isNotNull())
 
     year = F.coalesce(
         F.col('Article.ArticleDate.Year').cast('string'),
