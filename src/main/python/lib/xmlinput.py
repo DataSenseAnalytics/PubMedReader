@@ -80,26 +80,40 @@ class PubMedQuery(SmvXmlInput, ABC):
         """
 
     @abc.abstractproperty
-    def relDays(self):
+    def startDate(self):
+        """
+        """
+
+    @abc.abstractproperty
+    def endDate(self):
         """
         """
 
     def rowTag(self):
         return 'MedlineCitation'
 
-    def searchAndFetch(self):
-        searchResult = pubmedSearch(self.queryTerms(), self.relDays())
-        return fetchURL(searchResult)
+    def search(self):
+        searchResult = pubmedSearch(self.queryTerms(), self.startDate(), self.endDate())
+        return searchResult
+
+    def fetch(self):
+        return fetchURL(self.search())
+
+    def resultCnt(self):
+        return pubmedCnt(self.queryTerms(), self.startDate(), self.endDate()
 
     def run(self, df):
-        print self.searchAndFetch()
+        print self.resultCnt()
+        print self.path()
         return normalizeDf(df)
 
     def schemaPath(self):
         return 'lib/pubmed_mini_schema.json'
 
     def path(self):
-        qres = urllib.urlopen(self.searchAndFetch()).read()
+        qres = urllib.urlopen(self.fetch()).read()
         g = tempfile.NamedTemporaryFile(delete=False)
         g.write(qres)
+        #print g.name
+        g.close()
         return g.name
