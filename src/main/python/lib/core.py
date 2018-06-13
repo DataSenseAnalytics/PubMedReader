@@ -52,6 +52,15 @@ def pubmedSearch(meshTerms, startDate, endDate):
     results = Entrez.read(handle)
     return results
 
+# def meshSearch(code):
+#     Entrez.email = 'klu@twineanalytics.com'
+#     handle = Entrez.esummary(db="mesh",
+#                             #retmode="xml",
+#                             id=code
+#                             #term=code)
+#     results = Entrez.read(handle)
+#     return results
+
 def pubmedCnt(meshTerms, numPastDays):
     query = toQueryString(meshTerms)
     Entrez.email = 'klu@twineanalytics.com'
@@ -84,7 +93,7 @@ def fetchURL(searchResult):
     return 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&WebEnv=' + env + '&query_key=' + qkey
 
 # https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&WebEnv=NCID_1_270098305_130.14.22.215_9001_1524859961_1923430135_0MetA0_S_MegaStore&query_key=1&retmode=xml
-
+#https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=D001943
 def getDate(prefix, date_type):
     """
     3 date_types: ArticleDate, PubDate, MedlineDate
